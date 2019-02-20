@@ -1,0 +1,56 @@
+version: '3.7'
+services:
+  jenkins:
+    container_name: JenkinsMaster
+    image: jenkins/jenkins
+    networks:
+      - infraic
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    environment:
+      - JAVA_OPTS:-Djava.awt.headless=true
+    volumes:
+      - jenkins_home:/var/jenkins_home
+  sonarqube:
+    container_name: sonarqube
+    image: sonarqube
+    networks:
+      - infraic
+    ports:
+    - "8081:9000"
+    environment:
+    - SONARQUBE_JDBC_URL=jdbc:postgresql://db:5432/sonar   
+    - SONARQUBE_JDBC_USERNAME=sonar
+    - SONARQUBE_JDBC_PASSWORD=sonar
+    volumes:
+    - sonarqube_conf:/opt/sonarqube/conf
+    - sonarqube_plugins_extensions:/opt/sonarqube/extensions
+    - sonarqube_plugins_bundled_plugins:/opt/sonarqube/lib/bundled-plugin
+    depends_on:
+      - db
+  db:
+    container_name: postgres
+    image: postgres
+    networks:
+      - infraic
+    volumes:
+      - postgresql:/var/lib/postgresql
+      # This needs explicit mapping due to https://github.com/docker-library/postgres/blob/4e48e3228a30763913ece952c611e5e9b95c8759/Dockerfile.template#L52
+      - postgresql_data:/var/lib/postgresql/data
+    environment:
+    - POSTGRES_USER=sonar
+    - POSTGRES_PASSWORD=sonar
+
+
+volumes:
+  jenkins_home:
+  postgresql:
+  postgresql_data:
+  sonarqube_conf:
+  sonarqube_plugins_extensions:
+  sonarqube_plugins_bundled_plugins:
+
+networks:
+  infraic:
+    driver: bridge
